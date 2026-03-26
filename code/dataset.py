@@ -48,7 +48,7 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, test=False, pretrai
 
     if os.path.exists(cached_features_file) and not args.overwrite_cache:
         logger.info("Loading features from cached file %s", cached_features_file)
-        features = torch.load(cached_features_file)
+        features = torch.load(cached_features_file, weights_only=False)
         if cached_mode.endswith("wo_lexical_filter"):
             dataset = load_dataset_wo_lexical_filter(features)
         else:
@@ -97,8 +97,7 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, test=False, pretrai
 def load_feature_lexical_filter(args, examples, tokenizer, cached_features_file):
     logger.info("Training number: %s", str(len(examples)))
     features = convert_examples_to_features_lexical_filter(
-        examples, args.max_choice, args.max_seq_length, args.max_frame_length, tokenizer,
-        pad_token=tokenizer.pad_token_id, pad_token_segment_id=tokenizer.pad_token_type_id
+        examples, args.max_choice, args.max_seq_length, args.max_frame_length, tokenizer
     )
     logger.info("Saving features into cached file %s", cached_features_file)
     torch.save(features, cached_features_file)
@@ -108,8 +107,7 @@ def load_feature_lexical_filter(args, examples, tokenizer, cached_features_file)
 def load_feature_wo_lexical_filter(args, examples, tokenizer, cached_features_file):
     logger.info("Training number: %s", str(len(examples)))
     features = convert_examples_to_features_wo_lexical_filter(
-        examples, args.max_seq_length, args.max_frame_length, tokenizer,
-        pad_token=tokenizer.pad_token_id, pad_token_segment_id=tokenizer.pad_token_type_id)
+        examples, args.max_seq_length, args.max_frame_length, tokenizer)
     logger.info("Saving features into cached file %s", cached_features_file)
     torch.save(features, cached_features_file)
     return features
@@ -172,7 +170,7 @@ def load_and_cache_frames(args, tokenizer):
 
     if os.path.exists(cached_features_file) and not args.overwrite_cache:
         logger.info("Loading features from cached file %s", cached_features_file)
-        features = torch.load(cached_features_file)
+        features = torch.load(cached_features_file, weights_only=False)
     else:
         processor = FrameProcessor()
         logger.info("Creating features from dataset file at %s", args.data_dir)
@@ -181,9 +179,7 @@ def load_and_cache_frames(args, tokenizer):
         features = convert_frame_examples_to_features(
             examples,
             args.max_frame_length,
-            tokenizer,
-            pad_token=tokenizer.pad_token_id,
-            pad_token_segment_id=tokenizer.pad_token_type_id
+            tokenizer
         )
         logger.info("Saving features into cached file %s", cached_features_file)
         torch.save(features, cached_features_file)

@@ -90,7 +90,6 @@ class BertForFrameId(BertPreTrainedModel):
             target_ids = torch.concat((target_start_pos, target_end_pos), dim=1).unsqueeze(1)
             target_embed = self.target_extractor(sentence_embed, target_ids).squeeze(1)
             target_embed = self.target_dropout(target_embed)
-            # print("target_embed", target_embed.shape)     # bsz x hidden_size
 
             frame_output = self.frame_encoder(
                 input_ids=frame_input_ids,

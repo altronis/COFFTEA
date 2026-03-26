@@ -36,7 +36,7 @@ def flatten_and_batch_shift_indices(indices: torch.Tensor, sequence_length: int)
         raise RuntimeError(
             f"All elements in indices should be in range (0, {sequence_length - 1})"
         )
-    offsets = get_range_vector(indices.size(0), get_device_of(indices)) * sequence_length
+    offsets = get_range_vector(indices.size(0), indices.device) * sequence_length
     for _ in range(len(indices.size()) - 1):
         offsets = offsets.unsqueeze(1)
 
@@ -106,25 +106,15 @@ def batched_index_select(
     return selected_targets
 
 
-def get_device_of(tensor: torch.Tensor) -> int:
-    """
-    Returns the device of the tensor.
-    """
-    if not tensor.is_cuda:
-        return -1
-    else:
-        return tensor.get_device()
-
-
-def get_range_vector(size: int, device: int) -> torch.Tensor:
+def get_range_vector(size: int, device: torch.device) -> torch.Tensor:
     """
     Returns a range vector with the desired size, starting at 0. The CUDA implementation
     is meant to avoid copy data from CPU to GPU.
     """
-    if device > -1:
+    if device.type == "cpu":
         return torch.cuda.LongTensor(size, device=device).fill_(1).cumsum(0) - 1
     else:
-        return torch.arange(0, size, dtype=torch.long)
+        return torch.arange(0, size, device=device, dtype=torch.long)
 
 
 def batched_span_select(target: torch.Tensor, spans: torch.LongTensor) -> torch.Tensor:
@@ -168,7 +158,7 @@ def batched_span_select(target: torch.Tensor, spans: torch.LongTensor) -> torch.
     max_batch_span_width = span_widths.max().item() + 1
 
     # Shape: (1, 1, max_batch_span_width)
-    max_span_range_indices = get_range_vector(max_batch_span_width, get_device_of(target)).view(
+    max_span_range_indices = get_range_vector(max_batch_span_width, target.device).view(
         1, 1, -1
     )
     # Shape: (batch_size, num_spans, max_batch_span_width)
@@ -242,7 +232,7 @@ def masked_max(
     return max_value
 
 
-class MaxPoolingSpanExtractor:
+class MaxPoolingSpanExtractor(torch.nn.Module):
     """
     Represents spans through the application of a dimension-wise max-pooling operation.
     Given a span x_i, ..., x_j with i,j as span_start and span_end, each dimension d
@@ -267,6 +257,7 @@ class MaxPoolingSpanExtractor:
     """
 
     def __init__(self, input_dim: int):
+        super().__init__()
         self._input_dim = input_dim
 
     def _embed_spans(

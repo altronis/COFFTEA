@@ -28,7 +28,9 @@ def set_seed(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.seed)
+
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
 
 
 def simple_accuracy(preds, labels):
@@ -163,12 +165,12 @@ def train(args, train_dataset, eval_dataset, model, tokenizer, frame_dataset=Non
                 torch.save(args, os.path.join(output_dir, "training_args.bin"))
                 logger.info("Saving model checkpoint to %s", output_dir)
 
-            if args.max_steps > 0 and global_step > args.max_steps:
+            if 0 < args.max_steps < global_step:
                 logger.info("reach to max_step, epoch ended")
                 break
 
         logger.info("Epoch: %s  global_step = %s, average loss = %s", epoch_num, global_step, tr_loss / global_step)
-        # TODO evaluate after each epoch
+
         eval_result = evaluate(args, eval_dataset, model, frame_dataset)
         logger.info("Evaluate at %d epoch: eval_acc %s, best_dev_acc %s",
                     epoch_num, str(eval_result["eval_acc"]), str(best_dev_acc))
@@ -417,7 +419,7 @@ def get_frame_embed(args, model, frame_dataset=None):
     frame_embed = None
     frame_sampler = SequentialSampler(frame_dataset)
     frame_dataloader = DataLoader(frame_dataset, sampler=frame_sampler, batch_size=64)
-    frame_numbers = len(frame_dataset)
+
     for batch in tqdm(frame_dataloader, desc="Transfering frame definition"):
         model.eval()
         batch = tuple(t.to(args.device) for t in batch)
@@ -480,7 +482,7 @@ def main():
     set_seed(args)
 
     # frame definition dataset
-    tokenizer = BertTokenizer.from_pretrained(args.model_name_or_path, mirror="cuda")
+    tokenizer = BertTokenizer.from_pretrained(args.model_name_or_path)
     logging.info("Training/evaluation/testing parameters %s", args)
     frame_dataset = load_and_cache_frames(args=args, tokenizer=tokenizer)
 
@@ -536,7 +538,7 @@ def main():
 
     # Testing
     if args.do_test:
-        if (args.model_path_for_test is not None):
+        if args.model_path_for_test is not None:
             model_path_for_test = args.model_path_for_test
         else:
             model_path_for_test = os.path.join(args.output_dir, "best_checkpoint" + "_seed" + str(args.seed))
@@ -545,9 +547,6 @@ def main():
                                                config=config,
                                                frame_dropout_prob=args.frame_dropout_prob)
         model.to(args.device)
-
-        # test_dataset = load_and_cache_examples(args=args, tokenizer=tokenizer, evaluate=False, test=True, test_mode=args.test_mode)
-        # test(args, test_dataset, model, frame_dataset, model_path_for_test)
 
         # test on two scenarios lf and wo lf
         args.test_data_mode = "wo_lexical_filter"
