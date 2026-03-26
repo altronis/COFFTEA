@@ -69,15 +69,7 @@ def train(args, train_dataset, eval_dataset, model, tokenizer, frame_dataset=Non
         optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total,
     )
 
-    # multi-precision
-    if args.fp16:
-        try:
-            from apex import amp
-        except ImportError:
-            raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
-        model, optimizer = amp.initialize(model, optimizer, opt_level=args.fp16_opt_level)
-
-    # multi-gpu training (should be after apex fp16 initialization)
+    # multi-gpu training
     if args.n_gpu > 1:
         model = torch.nn.DataParallel(model)
 
@@ -127,13 +119,8 @@ def train(args, train_dataset, eval_dataset, model, tokenizer, frame_dataset=Non
             if args.gradient_accumulation_steps > 1:
                 loss = loss / args.gradient_accumulation_steps
 
-            if args.fp16:
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
-                torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
-            else:
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
             tr_loss += loss.item()
             logging_loss += loss.item()

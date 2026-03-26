@@ -115,19 +115,6 @@ def parse_args():
     parser.add_argument("--temperature", default=0.07, type=float, help="the temperature for contrastive learning")
     parser.add_argument("--device", type=int, default=1, help="the gpu number.")
     parser.add_argument("--n_gpu", type=int, default=1, help="the gpu number.")
-
-    parser.add_argument(
-        "--fp16",
-        action="store_true",
-        help="Whether to use 16-bit (mixed) precision (through NVIDIA apex) instead of 32-bit",
-    )
-    parser.add_argument(
-        "--fp16_opt_level",
-        type=str,
-        default="O1",
-        help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']."
-             "See details at https://nvidia.github.io/apex/amp.html",
-    )
     parser.add_argument("--max_choice", type=int, default=15, help="Maximum number of choices (frames).")
     args = parser.parse_args()
 
