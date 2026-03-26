@@ -1,8 +1,9 @@
-import allennlp.modules.span_extractors.max_pooling_span_extractor as max_pooling_span_extractor
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import BertPreTrainedModel, BertModel
+
+from max_pooling_span_extractor import MaxPoolingSpanExtractor
 
 
 class BertForFrameId(BertPreTrainedModel):
@@ -11,7 +12,7 @@ class BertForFrameId(BertPreTrainedModel):
         self.config = config
         # self.sentence_encoder = BertModel(config, add_pooling_layer=False)
         self.sentence_encoder = BertModel.from_pretrained("bert-base-uncased", add_pooling_layer=False)
-        self.target_extractor = max_pooling_span_extractor.MaxPoolingSpanExtractor(config.hidden_size)
+        self.target_extractor = MaxPoolingSpanExtractor(config.hidden_size)
         self.target_dropout = nn.Dropout(
             frame_dropout_prob if frame_dropout_prob is not None else config.hidden_dropout_prob)
         self.target_classifier = nn.Linear(config.hidden_size, config.frame_numbers)
