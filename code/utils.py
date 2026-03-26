@@ -1,11 +1,13 @@
-import os
 import csv
-from tqdm import tqdm
-from typing import List
-from transformers import PreTrainedTokenizer
 import logging
+import os
+from typing import List
+
+from tqdm import tqdm
+from transformers import PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
+
 
 class FrameProcessor():
     def get_pretrain_examples(self, data_dir):
@@ -15,7 +17,7 @@ class FrameProcessor():
     def get_train_examples(self, data_dir):
         logger.info("LOOKING AT {} train".format(data_dir))
         return self._create_examples(self._read_csv(os.path.join(data_dir, "train_wo_lexical_filter.csv")))
-    
+
     def get_train_examples_lexical_filter(self, data_dir):
         logger.info("LOOKING AT {} train with lexical filter".format(data_dir))
         return self._create_examples_lexical_fliter(self._read_csv(os.path.join(data_dir, "train_lexical_filter.csv")))
@@ -31,7 +33,7 @@ class FrameProcessor():
     def get_test_examples(self, data_dir):
         logger.info("LOOKING AT {} test".format(data_dir))
         return self._create_examples(self._read_csv(os.path.join(data_dir, "test_wo_lexical_filter.csv")))
-    
+
     def get_test_examples_lexical_filter(self, data_dir):
         logger.info("LOOKING AT {} test with lexical filter".format(data_dir))
         return self._create_examples_lexical_fliter(self._read_csv(os.path.join(data_dir, "test_lexical_filter.csv")))
@@ -39,10 +41,10 @@ class FrameProcessor():
     def get_frame_examples(self, data_dir):
         logger.info("LOOKING AT {} frame definition".format(data_dir))
         return self._create_examples_frame(self._read_csv(os.path.join(data_dir, "frame_definition.csv")))
-    
+
     def _read_csv(self, input_file):
-            with open(input_file, "r", encoding="utf-8") as f:
-                return list(csv.reader(f))
+        with open(input_file, "r", encoding="utf-8") as f:
+            return list(csv.reader(f))
 
     def _create_examples(self, lines: List[List[str]]):
         if lines[0][-1] != "label":
@@ -96,13 +98,15 @@ class FrameProcessor():
             ])
         return examples
 
+
 class InputFeatures_wo_lexical_filter(object):
     """A input example feature class"""
+
     def __init__(self, example_id, sentence_input_ids,
-            sentence_token_type_ids, sentence_attention_mask,
-            target_start_pos, target_end_pos,
-            label, frame_input_ids, frame_token_type_ids,
-            frame_attention_mask):
+                 sentence_token_type_ids, sentence_attention_mask,
+                 target_start_pos, target_end_pos,
+                 label, frame_input_ids, frame_token_type_ids,
+                 frame_attention_mask):
         self.example_id = example_id
         self.sentence_input_ids = sentence_input_ids
         self.sentence_token_type_ids = sentence_token_type_ids
@@ -114,13 +118,14 @@ class InputFeatures_wo_lexical_filter(object):
         self.frame_token_type_ids = frame_token_type_ids
         self.frame_attention_mask = frame_attention_mask
 
+
 def convert_examples_to_features_wo_lexical_filter(
         examples: List[List[str]],
         max_seq_length: int, max_frame_length: int,
         tokenizer: PreTrainedTokenizer,
         pad_token=0, pad_token_segment_id=0, pad_on_left=False,
         mask_padding_with_zero=True,
-    ) -> List:
+) -> List:
     """Inputexample   --->  Inputfeature"""
 
     features = []
@@ -136,10 +141,10 @@ def convert_examples_to_features_wo_lexical_filter(
         sentence = sentence.lower()
         # encode & encode_plus the later provide more info
         sentence_input = tokenizer.encode_plus(sentence, max_length=max_seq_length,
-            add_special_tokens=True, return_token_type_ids=True, 
-            padding="max_length", return_attention_mask=True,
-            return_overflowing_tokens=True,
-            truncation="only_first")
+                                               add_special_tokens=True, return_token_type_ids=True,
+                                               padding="max_length", return_attention_mask=True,
+                                               return_overflowing_tokens=True,
+                                               truncation="only_first")
         sentence_input_ids = sentence_input["input_ids"]
         sentence_token_type_ids = sentence_input["token_type_ids"]
         sentence_attention_mask = sentence_input["attention_mask"]
@@ -153,25 +158,26 @@ def convert_examples_to_features_wo_lexical_filter(
         if "num_truncated_tokens" in sentence_input and sentence_input["num_truncated_tokens"] > 0:
             sentence_cropping_count += 1
             logger.info(
-                        f"Attention! {example_id} Sentence --> Tokens truncated. "
-                    )
-            
+                f"Attention! {example_id} Sentence --> Tokens truncated. "
+            )
+
         sentence_list = sentence.split()
-        target_start_pos_token = len(tokenizer.tokenize(" ".join(sentence_list[:int(target_start_pos)]))) + 1   # +1 for CLS
-        target_end_pos_token = len(tokenizer.tokenize(" ".join(sentence_list[:int(target_end_pos)+1])))
+        target_start_pos_token = len(
+            tokenizer.tokenize(" ".join(sentence_list[:int(target_start_pos)]))) + 1  # +1 for CLS
+        target_end_pos_token = len(tokenizer.tokenize(" ".join(sentence_list[:int(target_end_pos) + 1])))
         # print(target_start_pos_token, target_end_pos_token)
         assert target_start_pos_token <= target_end_pos_token, "target range is not reasonable"
         if target_end_pos_token > max_seq_length:
             continue
-        
+
         frame_name = frame_name.lower()
         frame_def = frame_def.lower()
         frame_input = tokenizer.encode_plus(frame_def, max_length=max_frame_length,
-            add_special_tokens=True, return_token_type_ids=True,
-            return_overflowing_tokens=True,
-            padding="max_length",
-            return_attention_mask=True,
-            truncation="only_first")
+                                            add_special_tokens=True, return_token_type_ids=True,
+                                            return_overflowing_tokens=True,
+                                            padding="max_length",
+                                            return_attention_mask=True,
+                                            truncation="only_first")
         frame_input_ids = frame_input["input_ids"]
         frame_token_type_ids = frame_input["token_type_ids"]
         frame_attention_mask = frame_input["attention_mask"]
@@ -179,13 +185,13 @@ def convert_examples_to_features_wo_lexical_filter(
         assert len(frame_input_ids) == max_frame_length
         assert len(frame_attention_mask) == max_frame_length
         assert len(frame_token_type_ids) == max_frame_length
-                
+
         if "num_truncated_tokens" in frame_input and frame_input["num_truncated_tokens"] > 0:
             frame_cropping_count += 1
             # print(frame_input)
             logger.info(
-                        f"Attention! {example_id} Frame definition --> Tokens truncated. "
-                    )
+                f"Attention! {example_id} Frame definition --> Tokens truncated. "
+            )
             # exit()
 
         label = int(label) if label is not None else None
@@ -206,7 +212,7 @@ def convert_examples_to_features_wo_lexical_filter(
         )
 
     logger.info(f"sentence_cropping_count: {sentence_cropping_count}, frame_cropping_count: {frame_cropping_count}")
-    
+
     return features
 
 
@@ -216,20 +222,21 @@ class InputFeatures_lexical_filter(object):
         self.choices_features = [
             {
                 "sentence_input_ids": sentence_input_ids,
-                "sentence_token_type_ids": sentence_token_type_ids, 
+                "sentence_token_type_ids": sentence_token_type_ids,
                 "sentence_attention_mask": sentence_attention_mask,
-                "target_start_pos_token": target_start_pos_token, 
-                "target_end_pos_token": target_end_pos_token, 
+                "target_start_pos_token": target_start_pos_token,
+                "target_end_pos_token": target_end_pos_token,
                 "frame_input_ids": frame_input_ids,
                 "frame_token_type_ids": frame_token_type_ids,
                 "frame_attention_mask": frame_attention_mask
             }
             for sentence_input_ids, sentence_token_type_ids, sentence_attention_mask,
-                        target_start_pos_token, target_end_pos_token, 
-                        frame_input_ids, frame_token_type_ids, frame_attention_mask in choices_features
+            target_start_pos_token, target_end_pos_token,
+            frame_input_ids, frame_token_type_ids, frame_attention_mask in choices_features
         ]
         self.n_choice = n_choice
         self.label = label
+
 
 def convert_examples_to_features_lexical_filter(
         examples: List[List[str]],
@@ -238,7 +245,7 @@ def convert_examples_to_features_lexical_filter(
         tokenizer: PreTrainedTokenizer,
         pad_token=0, pad_token_segment_id=0, pad_on_left=False,
         mask_padding_with_zero=True,
-    ) -> List:
+) -> List:
     """Inputexample   --->  Inputfeature"""
 
     features = []
@@ -256,39 +263,41 @@ def convert_examples_to_features_lexical_filter(
             # sentence 
             sentence = sentence.lower()
             sentence_input = tokenizer.encode_plus(sentence, max_length=max_seq_length,
-                add_special_tokens=True, return_token_type_ids=True, 
-                padding="max_length", return_attention_mask=True,
-                return_overflowing_tokens=True,
-                truncation="only_first")
+                                                   add_special_tokens=True, return_token_type_ids=True,
+                                                   padding="max_length", return_attention_mask=True,
+                                                   return_overflowing_tokens=True,
+                                                   truncation="only_first")
             sentence_input_ids = sentence_input["input_ids"]
             sentence_token_type_ids = sentence_input["token_type_ids"]
             sentence_attention_mask = sentence_input["attention_mask"]
             # print(sentence, sentence_input)
 
-            assert len(sentence_input_ids) == max_seq_length, "len(sentence_input_ids): {}".format(len(sentence_input_ids))
+            assert len(sentence_input_ids) == max_seq_length, "len(sentence_input_ids): {}".format(
+                len(sentence_input_ids))
             assert len(sentence_token_type_ids) == max_seq_length
             assert len(sentence_attention_mask) == max_seq_length
 
             if "num_truncated_tokens" in sentence_input and sentence_input["num_truncated_tokens"] > 0:
                 sentence_cropping_count += 1
                 logger.info(
-                            f"Attention! {example_id} Sentence --> Tokens truncated. "
-                        )
+                    f"Attention! {example_id} Sentence --> Tokens truncated. "
+                )
 
             # get target index in tokens
             sentence_list = sentence.split()
-            target_start_pos_token = len(tokenizer.tokenize(" ".join(sentence_list[:int(target_start_pos)]))) + 1   # +1 for CLS
-            target_end_pos_token = len(tokenizer.tokenize(" ".join(sentence_list[:int(target_end_pos)+1])))
+            target_start_pos_token = len(
+                tokenizer.tokenize(" ".join(sentence_list[:int(target_start_pos)]))) + 1  # +1 for CLS
+            target_end_pos_token = len(tokenizer.tokenize(" ".join(sentence_list[:int(target_end_pos) + 1])))
             assert target_start_pos_token <= target_end_pos_token, "target range is not reasonable"
 
             frame_name = frame_name.lower()
             frame_def = frame_def.lower()
             frame_input = tokenizer.encode_plus(frame_def, max_length=max_frame_length,
-                add_special_tokens=True, return_token_type_ids=True,
-                return_overflowing_tokens=True,
-                padding="max_length",
-                return_attention_mask=True,
-                truncation="only_first")
+                                                add_special_tokens=True, return_token_type_ids=True,
+                                                return_overflowing_tokens=True,
+                                                padding="max_length",
+                                                return_attention_mask=True,
+                                                truncation="only_first")
             frame_input_ids = frame_input["input_ids"]
             frame_token_type_ids = frame_input["token_type_ids"]
             frame_attention_mask = frame_input["attention_mask"]
@@ -296,45 +305,49 @@ def convert_examples_to_features_lexical_filter(
             assert len(frame_input_ids) == max_frame_length
             assert len(frame_attention_mask) == max_frame_length
             assert len(frame_token_type_ids) == max_frame_length
-                    
+
             if "num_truncated_tokens" in frame_input and frame_input["num_truncated_tokens"] > 0:
                 frame_cropping_count += 1
                 logger.info(
-                            f"Attention! {example_id} Frame definition --> Tokens truncated. "
-                        )
+                    f"Attention! {example_id} Frame definition --> Tokens truncated. "
+                )
             choices_features.append((sentence_input_ids, sentence_token_type_ids, sentence_attention_mask,
-                        target_start_pos_token, target_end_pos_token, 
-                        frame_input_ids, frame_token_type_ids, frame_attention_mask))
+                                     target_start_pos_token, target_end_pos_token,
+                                     frame_input_ids, frame_token_type_ids, frame_attention_mask))
 
         if max_choice <= len(choices_features):
-                choices_features = choices_features[:max_choice]
+            choices_features = choices_features[:max_choice]
         else:
-            choices_features += [tuple([[0] * max_seq_length, [0] * max_seq_length, [0] * max_seq_length, 0, 0, [0] * max_frame_length, [0] * max_frame_length, [0] * max_frame_length])] * max(0, (max_choice - len(frame_defs)))
+            choices_features += [tuple(
+                [[0] * max_seq_length, [0] * max_seq_length, [0] * max_seq_length, 0, 0, [0] * max_frame_length,
+                 [0] * max_frame_length, [0] * max_frame_length])] * max(0, (max_choice - len(frame_defs)))
 
         label = int(label) if label is not None else None
 
         features.append(
             InputFeatures_lexical_filter(
                 example_id=example_id,
-                choices_features=choices_features,      # list 包含所有的candidate padding后
+                choices_features=choices_features,  # list 包含所有的candidate padding后
                 n_choice=n_choice,  # candidate number
-                label=label,)
-            )
+                label=label, )
+        )
 
     logger.info(f"sentence_cropping_count: {sentence_cropping_count}, frame_cropping_count: {frame_cropping_count}")
-    
+
     return features
 
 
 class InputFeatures_frame(object):
     """A input example feature class"""
+
     def __init__(self, frame_id,
-            frame_input_ids, frame_token_type_ids,
-            frame_attention_mask):
+                 frame_input_ids, frame_token_type_ids,
+                 frame_attention_mask):
         self.frame_id = frame_id
         self.frame_input_ids = frame_input_ids
         self.frame_token_type_ids = frame_token_type_ids
         self.frame_attention_mask = frame_attention_mask
+
 
 def convert_frame_examples_to_features(
         examples: List[List[str]],
@@ -342,7 +355,7 @@ def convert_frame_examples_to_features(
         tokenizer: PreTrainedTokenizer,
         pad_token=0, pad_token_segment_id=0, pad_on_left=False,
         mask_padding_with_zero=True,
-    ) -> List:
+) -> List:
     """Inputexample   --->  Inputfeature"""
 
     features = []
@@ -357,11 +370,11 @@ def convert_frame_examples_to_features(
         frame_name = frame_name.lower()
         frame_def = frame_def.lower()
         frame_input = tokenizer.encode_plus(frame_def, max_length=max_frame_length,
-            add_special_tokens=True, return_token_type_ids=True,
-            return_overflowing_tokens=True,
-            padding="max_length",
-            return_attention_mask=True,
-            truncation="only_first")
+                                            add_special_tokens=True, return_token_type_ids=True,
+                                            return_overflowing_tokens=True,
+                                            padding="max_length",
+                                            return_attention_mask=True,
+                                            truncation="only_first")
         frame_input_ids = frame_input["input_ids"]
         frame_token_type_ids = frame_input["token_type_ids"]
         frame_attention_mask = frame_input["attention_mask"]
@@ -369,21 +382,21 @@ def convert_frame_examples_to_features(
         assert len(frame_input_ids) == max_frame_length
         assert len(frame_attention_mask) == max_frame_length
         assert len(frame_token_type_ids) == max_frame_length
-                
+
         if "num_truncated_tokens" in frame_input and frame_input["num_truncated_tokens"] > 0:
             frame_cropping_count += 1
             logger.info(
-                        f"Attention! {frame_id} Frame definition --> Tokens truncated. "
-                    )
+                f"Attention! {frame_id} Frame definition --> Tokens truncated. "
+            )
 
         features.append(
             InputFeatures_frame(
                 frame_id=frame_id,
                 frame_input_ids=frame_input_ids,
                 frame_token_type_ids=frame_token_type_ids,
-                frame_attention_mask=frame_attention_mask,)
-            )
+                frame_attention_mask=frame_attention_mask, )
+        )
 
     logger.info(f"frame_cropping_count: {frame_cropping_count}")
-    
+
     return features

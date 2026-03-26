@@ -1,8 +1,7 @@
-import logging
-import os
 import torch
-from utils import *
 from torch.utils.data import TensorDataset
+
+from utils import *
 
 
 def select_field(features, field):
@@ -29,7 +28,7 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, test=False, pretrai
             cached_mode = "test_wo_lexical_filter"
     elif pretrain:
         cached_mode = "examplar_wo_lexical_filter"
-    else:   # train
+    else:  # train
         if train_data_mode == "lexical_filter":
             cached_mode = "train_lexical_filter"
         else:
@@ -46,7 +45,7 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, test=False, pretrai
             str(args.max_frame_length),
         ),
     )
-    
+
     if os.path.exists(cached_features_file) and not args.overwrite_cache:
         logger.info("Loading features from cached file %s", cached_features_file)
         features = torch.load(cached_features_file)
@@ -79,7 +78,7 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, test=False, pretrai
             examples = processor.get_pretrain_examples(args.data_dir)
             features = load_feature_wo_lexical_filter(args, examples, tokenizer, cached_features_file)
             dataset = load_dataset_wo_lexical_filter(features)
-        else: # train
+        else:  # train
             if train_data_mode == "lexical_filter":
                 examples = processor.get_train_examples_lexical_filter(args.data_dir)
                 features = load_feature_lexical_filter(args, examples, tokenizer, cached_features_file)
@@ -91,7 +90,7 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, test=False, pretrai
             # examples = processor.get_train_examples(args.data_dir)
             # features = load_feature_wo_lexical_filter(args, examples, tokenizer, cached_features_file)
             # dataset = load_dataset_wo_lexical_filter(features)
-    
+
     return dataset
 
 
@@ -105,6 +104,7 @@ def load_feature_lexical_filter(args, examples, tokenizer, cached_features_file)
     torch.save(features, cached_features_file)
     return features
 
+
 def load_feature_wo_lexical_filter(args, examples, tokenizer, cached_features_file):
     logger.info("Training number: %s", str(len(examples)))
     features = convert_examples_to_features_wo_lexical_filter(
@@ -113,6 +113,7 @@ def load_feature_wo_lexical_filter(args, examples, tokenizer, cached_features_fi
     logger.info("Saving features into cached file %s", cached_features_file)
     torch.save(features, cached_features_file)
     return features
+
 
 def load_dataset_lexical_filter(features):
     all_sentence_input_ids = torch.tensor(select_field(features, "sentence_input_ids"), dtype=torch.long)
@@ -128,13 +129,14 @@ def load_dataset_lexical_filter(features):
     all_frame_attention_mask = torch.tensor(select_field(features, "frame_attention_mask"), dtype=torch.long)
 
     all_n_choice = torch.tensor([f.n_choice for f in features], dtype=torch.long)
-    
+
     dataset = TensorDataset(all_sentence_input_ids, all_sentence_token_type_ids, all_sentence_attention_mask,
-        all_labels, all_target_start_pos, all_target_end_pos,
-        all_frame_input_ids, all_frame_token_type_ids, all_frame_attention_mask,
-        all_n_choice)
+                            all_labels, all_target_start_pos, all_target_end_pos,
+                            all_frame_input_ids, all_frame_token_type_ids, all_frame_attention_mask,
+                            all_n_choice)
 
     return dataset
+
 
 def load_dataset_wo_lexical_filter(features):
     all_sentence_input_ids = torch.tensor([f.sentence_input_ids for f in features], dtype=torch.long)
@@ -144,16 +146,17 @@ def load_dataset_wo_lexical_filter(features):
     all_labels = torch.tensor([f.label for f in features], dtype=torch.long)
     all_target_start_pos = torch.tensor([f.target_start_pos for f in features], dtype=torch.long)
     all_target_end_pos = torch.tensor([f.target_end_pos for f in features], dtype=torch.long)
-    
+
     all_frame_input_ids = torch.tensor([f.frame_input_ids for f in features], dtype=torch.long)
     all_frame_token_type_ids = torch.tensor([f.frame_token_type_ids for f in features], dtype=torch.long)
     all_frame_attention_mask = torch.tensor([f.frame_attention_mask for f in features], dtype=torch.long)
 
     dataset = TensorDataset(all_sentence_input_ids, all_sentence_token_type_ids, all_sentence_attention_mask,
-        all_labels, all_target_start_pos, all_target_end_pos,
-        all_frame_input_ids, all_frame_token_type_ids, all_frame_attention_mask)
+                            all_labels, all_target_start_pos, all_target_end_pos,
+                            all_frame_input_ids, all_frame_token_type_ids, all_frame_attention_mask)
 
     return dataset
+
 
 def load_and_cache_frames(args, tokenizer):
     cached_mode = "frame"
@@ -192,4 +195,3 @@ def load_and_cache_frames(args, tokenizer):
     dataset = TensorDataset(all_frame_input_ids, all_frame_token_type_ids, all_frame_attention_mask)
 
     return dataset
-

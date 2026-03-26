@@ -1,12 +1,8 @@
 import argparse
-import logging
-import argparse
-import os
-import torch
-
 
 train_mode = ["cross_entropy", "contrastive_learning"]
 data_mode = ["lexical_filter", "wo_lexical_filter"]
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -65,25 +61,28 @@ def parse_args():
     parser.add_argument(
         "--max_seq_length", default=160, type=int,
         help="The maximum total input sequence length after tokenization. Sequences longer "
-        "than this will be truncated, sequences shorter will be padded.",
+             "than this will be truncated, sequences shorter will be padded.",
     )
     parser.add_argument(
         "--max_frame_length", default=300, type=int,
         help="The maximum total frame definition sequence length after tokenization."
     )
-    parser.add_argument("--do_pretrain", action="store_true", help="Whether use examplars to do pretrain.", default=False)
+    parser.add_argument("--do_pretrain", action="store_true", help="Whether use examplars to do pretrain.",
+                        default=False)
     parser.add_argument("--do_train", action="store_true", help="Whether to run training.")
     parser.add_argument("--do_eval", action="store_true", help="Whether to run eval on the dev set.")
     parser.add_argument("--do_test", action="store_true", help="Whether to predict on the test set")
 
-    parser.add_argument("--initial_frame", action="store_true", help="naive initial embedding with BERT frame embedding", default=False)
+    parser.add_argument("--initial_frame", action="store_true",
+                        help="naive initial embedding with BERT frame embedding", default=False)
     parser.add_argument("--initial_forzen", action="store_true", help="Whether to optimize")
-    parser.add_argument("--initial_method", default=None, type=str , help="use CLS or target mean poolling")
+    parser.add_argument("--initial_method", default=None, type=str, help="use CLS or target mean poolling")
 
     parser.add_argument("--per_gpu_batch_size", default=8, type=int, help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--per_gpu_batch_size_lexical_filter", default=8, type=int, help="Batch size per GPU/CPU for evaluation with lexical filter.")
-    parser.add_argument("--per_gpu_batch_size_wo_lexical_filter", default=64, type=int, help="Batch size per GPU/CPU for evaluation without lexical filter.")
-
+    parser.add_argument("--per_gpu_batch_size_lexical_filter", default=8, type=int,
+                        help="Batch size per GPU/CPU for evaluation with lexical filter.")
+    parser.add_argument("--per_gpu_batch_size_wo_lexical_filter", default=64, type=int,
+                        help="Batch size per GPU/CPU for evaluation without lexical filter.")
 
     parser.add_argument(
         "--gradient_accumulation_steps", type=int, default=1,
@@ -106,7 +105,8 @@ def parse_args():
     parser.add_argument("--save_steps", type=int, default=-1, help="Save checkpoint every X updates steps.")
 
     parser.add_argument(
-        "--overwrite_cache", action="store_true", default=False, help="Overwrite the cached training and evaluation sets"
+        "--overwrite_cache", action="store_true", default=False,
+        help="Overwrite the cached training and evaluation sets"
     )
     parser.add_argument(
         "--overwrite_output_dir", action="store_true", help="Overwrite the content of the output directory"
@@ -126,7 +126,7 @@ def parse_args():
         type=str,
         default="O1",
         help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']."
-        "See details at https://nvidia.github.io/apex/amp.html",
+             "See details at https://nvidia.github.io/apex/amp.html",
     )
     parser.add_argument("--max_choice", type=int, default=15, help="Maximum number of choices (frames).")
     args = parser.parse_args()
